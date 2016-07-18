@@ -55,17 +55,9 @@ def createPogoSession(session, provider, access_token, loc):
     return None
 
 def createMapReq(loc):
-    parent = LatLng.from_degrees(loc.latitude,loc.longitude)
-    origin = CellId.from_lat_lng(parent).parent(15)
-    neighbors = [origin.id()]
-    # 10 before and 10 after
-    next_cell = origin.next()
-    prev_cell = origin.prev()
-    for i in range(5):
-        neighbors.append(prev_cell.id())
-        neighbors.append(next_cell.id())
-        next_cell = next_cell.next()
-        prev_cell = prev_cell.prev()
+    # parent = LatLng.from_degrees(loc.latitude,loc.longitude)
+    # origin = CellId.from_lat_lng(parent).parent(15)
+    neighbors = location.getNeighbors(loc)
     return GetMapObjectsMessage_pb2.GetMapObjectsMessage(CellId=sorted(neighbors), SinceTimeMs=[0]*len(neighbors),  latitude=util.f2i(loc.latitude), longitude=util.f2i(loc.longitude))
 
 def createGoogleSession(username, pw, startLocation):
