@@ -8,8 +8,11 @@ import logging
 
 from session import PogoSession
 import location
-
+import util
+import time
 from gpsoauth import perform_master_login, perform_oauth
+from Networking.Requests.Messages import GetMapObjectsMessage_pb2
+from s2sphere import *
 
 API_URL = 'https://pgorelease.nianticlabs.com/plfe/rpc'
 LOGIN_URL = 'https://sso.pokemon.com/sso/login?service=https%3A%2F%2Fsso.pokemon.com%2Fsso%2Foauth2.0%2FcallbackAuthorize'
@@ -51,6 +54,19 @@ def createPogoSession(session, provider, access_token, loc):
         logging.critical('Access token not generated')
     return None
 
+def createMapReq(loc):
+    parent = LatLng.from_degrees(loc.latitude,loc.longitude)
+    origin = CellId.from_lat_lng(parent).parent(15)
+    neighbors = [origin.id()]
+    # 10 before and 10 after
+    next_cell = origin.next()
+    prev_cell = origin.prev()
+    for i in range(5):
+        neighbors.append(prev_cell.id())
+        neighbors.append(next_cell.id())
+        next_cell = next_cell.next()
+        prev_cell = prev_cell.prev()
+    return GetMapObjectsMessage_pb2.GetMapObjectsMessage(CellId=sorted(neighbors), SinceTimeMs=[0]*len(neighbors),  latitude=util.f2i(loc.latitude), longitude=util.f2i(loc.longitude))
 
 def createGoogleSession(username, pw, startLocation):
     session = createRequestsSession()
@@ -67,7 +83,8 @@ def createPTCSession(username, pw, startLocation):
     session = createRequestsSession()
     logging.info('Creating PTC session for {}'.format(username))
     r = session.get(LOGIN_URL)
-    jdata = json.loads(r.content)
+    print(r.content)
+    jdata = json.loads(r.content.decode('utf-8'))
     data = {
         'lt': jdata['lt'],
         'execution': jdata['execution'],
@@ -92,9 +109,7 @@ def createPTCSession(username, pw, startLocation):
         'code': ticket,
     }
     r2 = session.post(LOGIN_OAUTH, data=data1)
-    access_token = re.sub('&expires.*', '', r2.content)
+    access_token = re.sub('&expires.*', '', r2.content.decode('utf-8'))
     access_token = re.sub('.*access_token=', '', access_token)
 
     return createPogoSession(session, 'ptc', access_token, startLocation)
-
-        

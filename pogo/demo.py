@@ -34,13 +34,28 @@ if __name__ == '__main__':
         logging.error('Invalid auth service {}'.format(args.auth))
         sys.exit(-1)
 
+
+    loc = location.getLocation("1111 2nd St, Santa Monica, 90403")
+    print(loc)
+    x = api.createMapReq(loc)
     if args.auth == 'ptc':
         session = api.createPTCSession(args.username, args.password, args.location)
     elif args.auth == 'google':
         session = api.createGoogleSession(args.username, args.password, args.location)
 
     if session: # do stuff
-        profile = session.getProfile()
-        logging.info(profile)
+        prof = session.getProfile()
+        inventory = session.getInventory()
+        badges = session.getBadges()
+        logging.info(prof)
+        logging.info(inventory)
+        logging.info(badges)
+
+        map_res = session.getMapObjects()
+        logging.info(map_res)
+        # forts = session.getForts()
+        # logging.info(profile)
+        # logging.info(forts)
+
     else:
         logging.critical('Session not created successfully')

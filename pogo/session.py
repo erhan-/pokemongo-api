@@ -11,11 +11,12 @@ from Networking import Envelopes_pb2
 from Networking.Requests import Request_pb2
 from Networking.Requests import RequestType_pb2
 from Networking.Requests.Messages import GetInventoryMessage_pb2
-from Networking.Requests.Messages import FortSearchMessage_pb2
+from Networking.Requests.Messages import GetMapObjectsMessage_pb2
 from Networking.Requests.Messages import DownloadSettingsMessage_pb2
 from Networking.Responses import CheckAwardedBadgesResponse_pb2
 from Networking.Responses import DownloadSettingsResponse_pb2
 from Networking.Responses import GetHatchedEggsResponse_pb2
+from Networking.Responses import GetMapObjectsResponse_pb2
 from Networking.Responses import GetPlayerResponse_pb2
 
 import api
@@ -41,7 +42,7 @@ class PogoSession(object):
 
     def setLocation(self, loc):
         self.location = loc
-        
+
     def createApiEndpoint(self):
         payload = []
         msg = Request_pb2.Request(
@@ -68,11 +69,12 @@ class PogoSession(object):
 
         # Build Envelope
         req.status_code = 2
-        req.request_id = api.getRPCId()
+        req.request_id = 1469378659230941192 #api.getRPCId()
         req.latitude, req.longitude, req.altitude = location.encodeLocation(self.location)
-        req.unknown12 = 18446744071615
+        req.unknown12 = 989
         req.requests.extend(payload)
-
+        # for meh in payload:
+        #     req.MergeFrom(meh)
         return req
 
     def requestOrThrow(self, req, url=None):
@@ -89,10 +91,10 @@ class PogoSession(object):
     def request(self, req, url=None):
         try:
             return self.requestOrThrow(req, url)
-        except Exception, e:
+        except Exception as e:
             logging.error(e)
             return None
-        
+
     def wrapAndRequest(self, payload):
         res = self.request(self.wrapInRequest(payload))
         if res is None:
@@ -125,7 +127,17 @@ class PogoSession(object):
         data = GetHatchedEggsResponse_pb2.GetHatchedEggsResponse()
         data.ParseFromString(res.returns[0])
         return data
-    
+    # Returns forts
+    def getMapObjects(self):
+        payload = []
+        msg = api.createMapReq(self.location).SerializeToString()
+        m1 =  Request_pb2.Request(request_type=RequestType_pb2.GET_MAP_OBJECTS, request_message=msg)
+        payload.append(m1)
+        res = self.wrapAndRequest(payload)
+        data = GetMapObjectsResponse_pb2.GetMapObjectsResponse()
+        data.ParseFromString(res.returns[0])
+        return data
+
     #Returns inventory query
     def getInventory(self):
         payload = []
@@ -143,13 +155,14 @@ class PogoSession(object):
 
     # Returns Badge Query
     def getBadges(self):
+        payload = []
         msg = Request_pb2.Request(
             request_type = RequestType_pb2.CHECK_AWARDED_BADGES
         )
         payload.append(msg)
         res = self.wrapAndRequest(payload)
         data = GetHatchedEggsResponse_pb2.GetHatchedEggsResponse()
-        data.ParseFromString(res.res.returns[0])
+        data.ParseFromString(res.returns[0])
         return data
 
     # Returns Settings Query

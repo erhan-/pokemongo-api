@@ -1,1 +1,3 @@
 dumps
+*.pyc
+*/__pycache__
